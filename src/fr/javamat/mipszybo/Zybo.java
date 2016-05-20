@@ -4,15 +4,13 @@ public class Zybo {
 	public static final int VGA_WIDTH = 320;
 	public static final int VGA_HEIGHT = 240;
 
-	public static final int MEMORY_SIZE = 240;
-
-	private int[] memory;
+	private MemoryRAM memory;
 
 	public Zybo() {
-		memory = new int[MEMORY_SIZE];
+		memory = new MemoryRAM();
 	}
 
-	public int[] getMemory() {
+	public MemoryRAM getMemory() {
 		return memory;
 	}
 }

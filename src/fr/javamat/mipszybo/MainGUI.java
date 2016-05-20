@@ -13,7 +13,7 @@ public class MainGUI {
 		f.setLayout(new BorderLayout());
 
 		f.add(new PanelScreen(zybo), BorderLayout.CENTER);
-		f.add(new PanelIO(zybo), BorderLayout.SOUTH);
+		f.add(new PanelInOut(zybo), BorderLayout.SOUTH);
 
 		f.pack();
 		f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
