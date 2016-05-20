@@ -13,7 +13,7 @@ public class Clock extends Thread {
 	public void run() {
 		while (true) {
 			try {
-				Thread.sleep(100);
+				Thread.sleep(10);
 				for (Sync sync : syncListener) {
 					sync.tick();
 				}
