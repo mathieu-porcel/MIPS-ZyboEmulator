@@ -26,7 +26,17 @@ public class PanelVGA extends JComponent implements Sync {
 	@Override
 	public void paint(Graphics g) {
 		for (int i = 0; i < 320 * 240; i++) {
-			videoMem[i] = zybo.getMem().getDataAt(0x80000 + i * 4);
+			int color = zybo.getMem().getDataAt(0x80000 + i * 4);
+
+			// Conversion couleur réel
+			int red = (color & 0x0000F800) >> 11;
+			int green = (color & 0x000007E0) >> 5;
+			int blue = (color & 0x0000001F) >> 0;
+			red = (int) (255.0 * red / 31.0);
+			green = (int) (255.0 * green / 63.0);
+			blue = (int) (255.0 * blue / 31.0);
+
+			videoMem[i] = (red << 16) | (green << 8) | (blue << 0);
 		}
 		g.drawImage(bufferedImage, 0, 0, getWidth(), getHeight(), null);
 	}

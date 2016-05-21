@@ -1,6 +1,12 @@
 package fr.javamat.mipszybo;
 
 import java.awt.BorderLayout;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 
 import javax.swing.JFrame;
 
@@ -23,23 +29,28 @@ public class MainGUI {
 		f.setLocationRelativeTo(null);
 		f.setVisible(true);
 
-		// Programme test:
-		int[] ram = zybo.getMem().getData();
-
-		// ori $11, $10, 1
-		// add $12, $12, $11
-		// lui $13, 8
-		// add $13, $13, $12
-		// lui $14, 0xFFFF
-		// sw $14, 0($13)
-
-		ram[0] = 0x354b0004;
-		ram[1] = 0x018b6020;
-		ram[2] = 0x3c0d0008;
-		ram[3] = 0x01ac6820;
-		ram[4] = 0x3c0eFFFF;
-		ram[5] = 0xadae0000;
-		ram[6] = 0xffffffff;
+		// Lecture programme
+		String file = "program/mips_invader_zybo.mem";
+		try {
+			InputStream ips = new FileInputStream(file);
+			InputStreamReader ipsr = new InputStreamReader(ips);
+			BufferedReader br = new BufferedReader(ipsr);
+			String l;
+			int addr = 0;
+			int[] ram = zybo.getMem().getData();
+			while ((l = br.readLine()) != null) {
+				if (l.startsWith("@")) {
+					addr = (int) (Long.decode("0x" + l.subSequence(1, 9)) / 4);
+				} else {
+					ram[addr] = (int) (Long.decode("0x" + l) * 1);
+					addr += 1;
+				}
+			}
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 
 		zybo.getClock().start();
 	}

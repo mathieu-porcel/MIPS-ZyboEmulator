@@ -48,17 +48,15 @@ public class MipsCPU implements Sync {
 	public void tick() {
 		MemoryRAM mem = zybo.getMem();
 
-		int IR = reg.get("IR");
-		int RS = (int) ((Integer.toUnsignedLong(IR) & Integer.toUnsignedLong(0x03E00000)) >> 21);
-		int RT = (int) ((Integer.toUnsignedLong(IR) & Integer.toUnsignedLong(0x001F0000)) >> 16);
-		int RD = (int) ((Integer.toUnsignedLong(IR) & Integer.toUnsignedLong(0x0000F800)) >> 11);
+		long IR = Integer.toUnsignedLong(reg.get("IR"));
+		long RS = (IR & 0x03E00000L) >> 21;
+		long RT = (IR & 0x001F0000L) >> 16;
+		long RD = (IR & 0x0000F800L) >> 11;
 
-		int imm16 = (int) (Integer.toUnsignedLong(IR) & Integer.toUnsignedLong(0x0000FFFF));
-		int imm16ext = (int) (Integer.toUnsignedLong(imm16)
-				+ ((Integer.toUnsignedLong(IR) & Integer.toUnsignedLong(0x00008000)) == 0 ? 0 : Integer.toUnsignedLong(0xFFFF0000)));
-		int imm16extUp = (int) (Integer.toUnsignedLong(imm16) << 2
-				+ ((Integer.toUnsignedLong(IR) & Integer.toUnsignedLong(0x00008000)) == 0 ? 0 : Integer.toUnsignedLong(0xFC000000)));
-		int imm24 = (int) ((Integer.toUnsignedLong(IR) & Integer.toUnsignedLong(0x03FFFFFF)) << 2);
+		long imm16 = IR & 0x0000FFFFL;
+		long imm16ext = imm16 + ((IR & 0x00008000L) == 0 ? 0 : 0xFFFF0000L);
+		long imm16extUp = (imm16 << 2) + ((IR & 0x00008000L) == 0 ? 0 : 0xFC000000L);
+		long imm26 = (IR & 0x03FFFFFFL) << 2;
 
 		switch (state) {
 		case init:
@@ -78,11 +76,11 @@ public class MipsCPU implements Sync {
 
 		case decode:
 			reg.put("PC", (int) (Integer.toUnsignedLong(reg.get("PC")) + 4));
-			int opcode = (int) ((Integer.toUnsignedLong(IR) & Integer.toUnsignedLong(0xFC000000)) >> 26);
+			int opcode = (int) ((IR & 0xFC000000L) >> 26);
 			switch (opcode) {
 			case 0:
 				// Special
-				int func = (int) (Integer.toUnsignedLong(IR) & Integer.toUnsignedLong(0x000003F));
+				int func = (int) (IR & 0x000003FL);
 				switch (func) {
 				case 0:
 					state = states.sll;
@@ -145,7 +143,7 @@ public class MipsCPU implements Sync {
 				break;
 			case 1:
 				// Regimm
-				int regimm = (int) ((Integer.toUnsignedLong(IR) & Integer.toUnsignedLong(0x001F0000)) >> 16);
+				int regimm = (int) ((IR & 0x001F0000L) >> 16);
 				switch (regimm) {
 				case 0:
 					state = states.bltz;
@@ -219,17 +217,9 @@ public class MipsCPU implements Sync {
 
 			break;
 
-		case lui:
-			reg.put(RT + "", imm16 << 16);
-			mem.setAddr(reg.get("PC"));
-			state = states.fetch;
-			break;
-
-		case ori:
-			reg.put(RT + "", reg.get(RS + "") | imm16);
-			mem.setAddr(reg.get("PC"));
-			state = states.fetch;
-			break;
+		/*
+		 * Operations
+		 */
 
 		case add:
 			reg.put(RD + "", reg.get(RT + "") + reg.get(RS + ""));
@@ -237,8 +227,164 @@ public class MipsCPU implements Sync {
 			state = states.fetch;
 			break;
 
+		case addi:
+			reg.put(RD + "", reg.get(RT + "") + ((int) imm16));
+			mem.setAddr(reg.get("PC"));
+			state = states.fetch;
+			break;
+
+		case sub:
+			reg.put(RD + "", reg.get(RT + "") - reg.get(RS + ""));
+			mem.setAddr(reg.get("PC"));
+			state = states.fetch;
+			break;
+
+		case and:
+			reg.put(RD + "", reg.get(RS + "") & reg.get(RT + ""));
+			mem.setAddr(reg.get("PC"));
+			state = states.fetch;
+			break;
+
+		case andi:
+			reg.put(RT + "", reg.get(RS + "") & ((int) imm16));
+			mem.setAddr(reg.get("PC"));
+			state = states.fetch;
+			break;
+
+		case or:
+			reg.put(RD + "", reg.get(RS + "") | reg.get(RT + ""));
+			mem.setAddr(reg.get("PC"));
+			state = states.fetch;
+			break;
+
+		case xor:
+			reg.put(RD + "", reg.get(RS + "") ^ reg.get(RT + ""));
+			mem.setAddr(reg.get("PC"));
+			state = states.fetch;
+			break;
+
+		case xori:
+			reg.put(RT + "", reg.get(RS + "") ^ ((int) imm16));
+			mem.setAddr(reg.get("PC"));
+			state = states.fetch;
+			break;
+
+		case nor:
+			reg.put(RD + "", ~(reg.get(RS + "") | reg.get(RT + "")));
+			mem.setAddr(reg.get("PC"));
+			state = states.fetch;
+			break;
+
+		case srl:
+			reg.put(RD + "", reg.get(RS + "") >>> reg.get(RT + ""));
+			mem.setAddr(reg.get("PC"));
+			state = states.fetch;
+			break;
+
+		case sra:
+			reg.put(RD + "", reg.get(RS + "") >> reg.get(RT + ""));
+			mem.setAddr(reg.get("PC"));
+			state = states.fetch;
+			break;
+
+		case sll:
+			reg.put(RD + "", reg.get(RS + "") << reg.get(RT + ""));
+			mem.setAddr(reg.get("PC"));
+			state = states.fetch;
+			break;
+
+		case sllv:
+			reg.put(RD + "", reg.get(RS + "") << reg.get(RT + ""));
+			mem.setAddr(reg.get("PC"));
+			state = states.fetch;
+			break;
+
+		case srlv:
+			reg.put(RD + "", reg.get(RS + "") >>> reg.get(RT + ""));
+			mem.setAddr(reg.get("PC"));
+			state = states.fetch;
+			break;
+
+		case srav:
+			reg.put(RD + "", reg.get(RS + "") >> reg.get(RT + ""));
+			mem.setAddr(reg.get("PC"));
+			state = states.fetch;
+			break;
+
+		case slt:
+			if (reg.get(RS + "") < reg.get(RT + "")) {
+				state = states.true_to_rd;
+			} else {
+				state = states.false_to_rd;
+			}
+			break;
+
+		case slti:
+			if (reg.get(RS + "") < (int) (imm16ext)) {
+				state = states.true_to_rt;
+			} else {
+				state = states.false_to_rt;
+			}
+			break;
+
+		case sltu:
+			if (Integer.toUnsignedLong(reg.get(RS + "")) < Integer.toUnsignedLong(reg.get(RT + ""))) {
+				state = states.true_to_rd;
+			} else {
+				state = states.false_to_rd;
+			}
+			break;
+
+		case sltiu:
+			if (Integer.toUnsignedLong(reg.get(RS + "")) < imm16ext) {
+				state = states.true_to_rt;
+			} else {
+				state = states.false_to_rt;
+			}
+			break;
+
+		case true_to_rd:
+			reg.put(RD + "", 1);
+			mem.setAddr(reg.get("PC"));
+			state = states.fetch;
+			break;
+
+		case false_to_rd:
+			reg.put(RD + "", 0);
+			mem.setAddr(reg.get("PC"));
+			state = states.fetch;
+			break;
+
+		case true_to_rt:
+			reg.put(RT + "", 1);
+			mem.setAddr(reg.get("PC"));
+			state = states.fetch;
+			break;
+
+		case false_to_rt:
+			reg.put(RT + "", 0);
+			mem.setAddr(reg.get("PC"));
+			state = states.fetch;
+			break;
+
+		/*
+		 * Mémoire
+		 */
+
+		case lui:
+			reg.put(RT + "", (int) (imm16 << 16));
+			mem.setAddr(reg.get("PC"));
+			state = states.fetch;
+			break;
+
+		case ori:
+			reg.put(RT + "", (int) (Integer.toUnsignedLong(reg.get(RS + "")) | imm16));
+			mem.setAddr(reg.get("PC"));
+			state = states.fetch;
+			break;
+
 		case lw:
-			reg.put("AD", (int) (Integer.toUnsignedLong(reg.get(RS + "")) + Integer.toUnsignedLong(imm16ext)));
+			reg.put("AD", (int) (Integer.toUnsignedLong(reg.get(RS + "")) + imm16ext));
 			state = states.load;
 			break;
 
@@ -259,7 +405,7 @@ public class MipsCPU implements Sync {
 			break;
 
 		case sw:
-			reg.put("AD", (int) (Integer.toUnsignedLong(reg.get(RS + "")) + Integer.toUnsignedLong(imm16ext)));
+			reg.put("AD", (int) (Integer.toUnsignedLong(reg.get(RS + "")) + imm16ext));
 			state = states.store;
 			break;
 
@@ -267,6 +413,99 @@ public class MipsCPU implements Sync {
 			mem.setAddr(reg.get("AD"));
 			mem.write(reg.get(RT + ""));
 			state = states.fetch_wait;
+			break;
+
+		/*
+		 * Branchements
+		 */
+
+		case j:
+			reg.put("PC", (int) ((reg.get("PC") & 0xF0000000L) | imm26));
+			state = states.fetch_wait;
+			break;
+
+		case bj:
+			reg.put("PC", (int) (Integer.toUnsignedLong(reg.get("PC")) + imm16extUp));
+			state = states.fetch_wait;
+			break;
+
+		case jr:
+			reg.put("PC", reg.get(RS + ""));
+			state = states.fetch_wait;
+			break;
+
+		case jalr:
+			reg.put(RD + "", reg.get("PC"));
+			state = states.jr;
+			break;
+
+		case beq:
+			if (reg.get(RT + "") == reg.get(RS + "")) {
+				state = states.bj;
+			} else {
+				mem.setAddr(reg.get("PC"));
+				state = states.fetch;
+			}
+			break;
+
+		case bne:
+			if (reg.get(RT + "") != reg.get(RS + "")) {
+				state = states.bj;
+			} else {
+				mem.setAddr(reg.get("PC"));
+				state = states.fetch;
+			}
+			break;
+
+		case blez:
+			if (reg.get(RS + "") <= 0) {
+				state = states.bj;
+			} else {
+				mem.setAddr(reg.get("PC"));
+				state = states.fetch;
+			}
+			break;
+
+		case bgtz:
+			if (reg.get(RS + "") > 0) {
+				state = states.bj;
+			} else {
+				mem.setAddr(reg.get("PC"));
+				state = states.fetch;
+			}
+			break;
+
+		case bltz:
+			if (reg.get(RS + "") < 0) {
+				state = states.bj;
+			} else {
+				mem.setAddr(reg.get("PC"));
+				state = states.fetch;
+			}
+			break;
+
+		case bltzal:
+			reg.put("31", reg.get("PC"));
+			state = states.bltz;
+			break;
+
+		case bgez:
+			if (reg.get(RS + "") >= 0) {
+				state = states.bj;
+			} else {
+				mem.setAddr(reg.get("PC"));
+				state = states.fetch;
+			}
+			break;
+
+		case bgezal:
+			reg.put("31", reg.get("PC"));
+			state = states.bgez;
+			break;
+
+		case jal:
+			reg.put("31", reg.get("PC"));
+			state = states.j;
 			break;
 
 		default:

@@ -8,5 +8,7 @@ public class MainCMD {
 		int c1 = (int) c;
 		
 		System.out.println(a + " + " + b + " = " + c + " (" + c1 + ")");
+		
+		System.out.println((a >> 31) + " " + (Integer.toUnsignedLong(a) >> 31));
 	}
 }
