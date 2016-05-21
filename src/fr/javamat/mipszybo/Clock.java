@@ -12,11 +12,11 @@ public class Clock extends Thread {
 	@Override
 	public void run() {
 		while (true) {
+			for (Sync sync : syncListener) {
+				sync.tick();
+			}
 			try {
-				Thread.sleep(10);
-				for (Sync sync : syncListener) {
-					sync.tick();
-				}
+				Thread.sleep(1);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}

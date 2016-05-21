@@ -6,18 +6,21 @@ public class Zybo {
 
 	private MipsCPU cpu;
 	private MemoryRAM memory;
+	private Clock clock;
 
 	public Zybo() {
 		cpu = new MipsCPU(this);
 		memory = new MemoryRAM();
 
-		Clock clock = new Clock();
+		clock = new Clock();
 		clock.addSyncListener(cpu);
-		clock.addSyncListener(memory);
-		clock.start();
 	}
 
 	public MemoryRAM getMem() {
 		return memory;
+	}
+
+	public Clock getClock() {
+		return clock;
 	}
 }

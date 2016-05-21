@@ -1,13 +1,13 @@
 package fr.javamat.mipszybo;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 public class MipsCPU implements Sync {
 
 	/**
 	 * Registres
 	 */
-	private HashMap<String, Integer> reg;
+	private LinkedHashMap<String, Integer> reg;
 
 	/**
 	 * Etats de la partie contrôle
@@ -31,12 +31,35 @@ public class MipsCPU implements Sync {
 	 */
 	public MipsCPU(Zybo zybo) {
 		this.zybo = zybo;
-		reg = new HashMap<String, Integer>();
+		reg = new LinkedHashMap<String, Integer>();
 		state = states.init;
+
+		// Créations des registres
+		reg.put("IR", 0);
+		reg.put("PC", 0);
+		reg.put("AD", 0);
+		reg.put("DT", 0);
+		for (int i = 0; i < 32; i++) {
+			reg.put(i + "", 0);
+		}
 	}
 
 	@Override
 	public void tick() {
+		MemoryRAM mem = zybo.getMem();
+
+		int IR = reg.get("IR");
+		int RS = (int) ((Integer.toUnsignedLong(IR) & Integer.toUnsignedLong(0x03E00000)) >> 21);
+		int RT = (int) ((Integer.toUnsignedLong(IR) & Integer.toUnsignedLong(0x001F0000)) >> 16);
+		int RD = (int) ((Integer.toUnsignedLong(IR) & Integer.toUnsignedLong(0x0000F800)) >> 11);
+
+		int imm16 = (int) (Integer.toUnsignedLong(IR) & Integer.toUnsignedLong(0x0000FFFF));
+		int imm16ext = (int) (Integer.toUnsignedLong(imm16)
+				+ ((Integer.toUnsignedLong(IR) & Integer.toUnsignedLong(0x00008000)) == 0 ? 0 : Integer.toUnsignedLong(0xFFFF0000)));
+		int imm16extUp = (int) (Integer.toUnsignedLong(imm16) << 2
+				+ ((Integer.toUnsignedLong(IR) & Integer.toUnsignedLong(0x00008000)) == 0 ? 0 : Integer.toUnsignedLong(0xFC000000)));
+		int imm24 = (int) ((Integer.toUnsignedLong(IR) & Integer.toUnsignedLong(0x03FFFFFF)) << 2);
+
 		switch (state) {
 		case init:
 			reg.put("PC", 0);
@@ -44,21 +67,22 @@ public class MipsCPU implements Sync {
 			break;
 
 		case fetch_wait:
-			zybo.getMem().setAddr(reg.get("PC"));
+			mem.setAddr(reg.get("PC"));
 			state = states.fetch;
 			break;
 
 		case fetch:
-			reg.put("IR", zybo.getMem().getDataIn());
+			reg.put("IR", mem.getDataIn());
 			state = states.decode;
 			break;
 
 		case decode:
-			int opcode = (reg.get("IR") & 0xFC00000) >> 26;
+			reg.put("PC", (int) (Integer.toUnsignedLong(reg.get("PC")) + 4));
+			int opcode = (int) ((Integer.toUnsignedLong(IR) & Integer.toUnsignedLong(0xFC000000)) >> 26);
 			switch (opcode) {
 			case 0:
 				// Special
-				int func = (reg.get("IR") & 0x000003F);
+				int func = (int) (Integer.toUnsignedLong(IR) & Integer.toUnsignedLong(0x000003F));
 				switch (func) {
 				case 0:
 					state = states.sll;
@@ -121,7 +145,7 @@ public class MipsCPU implements Sync {
 				break;
 			case 1:
 				// Regimm
-				int regimm = (reg.get("IR") & 0x001F0000) >> 16;
+				int regimm = (int) ((Integer.toUnsignedLong(IR) & Integer.toUnsignedLong(0x001F0000)) >> 16);
 				switch (regimm) {
 				case 0:
 					state = states.bltz;
@@ -192,9 +216,57 @@ public class MipsCPU implements Sync {
 				state = states.init;
 				break;
 			}
+
+			break;
+
+		case lui:
+			reg.put(RT + "", imm16 << 16);
+			mem.setAddr(reg.get("PC"));
+			state = states.fetch;
+			break;
+
+		case ori:
+			reg.put(RT + "", reg.get(RS + "") | imm16);
+			mem.setAddr(reg.get("PC"));
+			state = states.fetch;
+			break;
+
+		case add:
+			reg.put(RD + "", reg.get(RT + "") + reg.get(RS + ""));
+			mem.setAddr(reg.get("PC"));
+			state = states.fetch;
 			break;
 
 		case lw:
+			reg.put("AD", (int) (Integer.toUnsignedLong(reg.get(RS + "")) + Integer.toUnsignedLong(imm16ext)));
+			state = states.load;
+			break;
+
+		case load:
+			mem.setAddr(reg.get("AD"));
+			state = states.mem_to_dt;
+			break;
+
+		case mem_to_dt:
+			reg.put("DT", mem.getDataIn());
+			state = states.dt_to_rt;
+			break;
+
+		case dt_to_rt:
+			reg.put(RT + "", reg.get("DT"));
+			mem.setAddr(reg.get("PC"));
+			state = states.fetch;
+			break;
+
+		case sw:
+			reg.put("AD", (int) (Integer.toUnsignedLong(reg.get(RS + "")) + Integer.toUnsignedLong(imm16ext)));
+			state = states.store;
+			break;
+
+		case store:
+			mem.setAddr(reg.get("AD"));
+			mem.write(reg.get(RT + ""));
+			state = states.fetch_wait;
 			break;
 
 		default:
