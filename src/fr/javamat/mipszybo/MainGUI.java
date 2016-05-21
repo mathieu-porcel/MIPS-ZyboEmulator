@@ -30,7 +30,7 @@ public class MainGUI {
 		f.setVisible(true);
 
 		// Lecture programme
-		String file = "program/mips_invader_zybo.mem";
+		String file = "program/droite.mem";
 		try {
 			InputStream ips = new FileInputStream(file);
 			InputStreamReader ipsr = new InputStreamReader(ips);
