@@ -15,11 +15,11 @@ public class Clock extends Thread {
 			for (Sync sync : syncListener) {
 				sync.tick();
 			}
-			try {
-				Thread.sleep(10);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
+//			try {
+//				Thread.sleep(10);
+//			} catch (InterruptedException e) {
+//				e.printStackTrace();
+//			}
 		}
 	}
 

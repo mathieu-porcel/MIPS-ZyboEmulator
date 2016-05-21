@@ -55,7 +55,7 @@ public class MipsCPU implements Sync {
 		long SH = (IR & 0x000007C0L) >> 6;
 
 		long imm16 = IR & 0x0000FFFFL;
-		long imm16ext = imm16; // TODO: signe + ((IR & 0x00008000L) == 0 ? 0 : 0xFFFF0000L);
+		long imm16ext = imm16 + ((IR & 0x00008000L) == 0 ? 0 : 0xFFFF0000L);
 		long imm16extUp = (imm16 << 2); // TODO: signe + ((IR & 0x00008000L) == 0 ? 0 : 0xFC000000L);
 		long imm26 = (IR & 0x03FFFFFFL) << 2;
 
@@ -215,7 +215,7 @@ public class MipsCPU implements Sync {
 				state = states.init;
 				break;
 			}
-			
+
 			System.out.println(state + " " + Integer.toHexString(reg.get("28")));
 
 			break;
@@ -237,7 +237,7 @@ public class MipsCPU implements Sync {
 			break;
 
 		case sub:
-			reg.put(RD + "", reg.get(RT + "") - reg.get(RS + ""));
+			reg.put(RD + "", reg.get(RS + "") - reg.get(RT + ""));
 			mem.setAddr(reg.get("PC"));
 			state = states.fetch;
 			break;
@@ -279,13 +279,13 @@ public class MipsCPU implements Sync {
 			break;
 
 		case srl:
-			reg.put(RD + "", reg.get(RS + "") >>> reg.get(RT + ""));
+			reg.put(RD + "", reg.get(RT + "") >>> SH);
 			mem.setAddr(reg.get("PC"));
 			state = states.fetch;
 			break;
 
 		case sra:
-			reg.put(RD + "", reg.get(RS + "") >> reg.get(RT + ""));
+			reg.put(RD + "", reg.get(RT + "") >> SH);
 			mem.setAddr(reg.get("PC"));
 			state = states.fetch;
 			break;
@@ -297,19 +297,19 @@ public class MipsCPU implements Sync {
 			break;
 
 		case sllv:
-			reg.put(RD + "", reg.get(RS + "") << reg.get(RT + ""));
+			reg.put(RD + "", reg.get(RT + "") << reg.get(RS + ""));
 			mem.setAddr(reg.get("PC"));
 			state = states.fetch;
 			break;
 
 		case srlv:
-			reg.put(RD + "", reg.get(RS + "") >>> reg.get(RT + ""));
+			reg.put(RD + "", reg.get(RT + "") >>> reg.get(RS + ""));
 			mem.setAddr(reg.get("PC"));
 			state = states.fetch;
 			break;
 
 		case srav:
-			reg.put(RD + "", reg.get(RS + "") >> reg.get(RT + ""));
+			reg.put(RD + "", reg.get(RT + "") >> reg.get(RS + ""));
 			mem.setAddr(reg.get("PC"));
 			state = states.fetch;
 			break;
@@ -323,7 +323,7 @@ public class MipsCPU implements Sync {
 			break;
 
 		case slti:
-			if (reg.get(RS + "") < (int) (imm16ext)) {
+			if (reg.get(RS + "") < ((int) imm16ext)) {
 				state = states.true_to_rt;
 			} else {
 				state = states.false_to_rt;
@@ -387,7 +387,7 @@ public class MipsCPU implements Sync {
 			break;
 
 		case lw:
-			reg.put("AD", (int) (Integer.toUnsignedLong(reg.get(RS + "")) + imm16ext));
+			reg.put("AD", (int) (Integer.toUnsignedLong(reg.get(RS + "")) + ((int) imm16ext)));
 			state = states.load;
 			break;
 
@@ -408,7 +408,7 @@ public class MipsCPU implements Sync {
 			break;
 
 		case sw:
-			reg.put("AD", (int) (Integer.toUnsignedLong(reg.get(RS + "")) + imm16ext));
+			reg.put("AD", (int) (Integer.toUnsignedLong(reg.get(RS + "")) + ((int) imm16ext)));
 			state = states.store;
 			break;
 
@@ -428,7 +428,7 @@ public class MipsCPU implements Sync {
 			break;
 
 		case bj:
-			reg.put("PC", (int) (Integer.toUnsignedLong(reg.get("PC")) + imm16extUp));
+			reg.put("PC", (int) (Integer.toUnsignedLong(reg.get("PC")) + ((int) imm16extUp)));
 			state = states.fetch_wait;
 			break;
 
