@@ -8,7 +8,7 @@ import java.awt.image.DataBufferInt;
 import javax.swing.JComponent;
 
 @SuppressWarnings("serial")
-public class PanelVGA extends JComponent implements Sync {
+public class PanelVGA extends JComponent {
 	private Zybo zybo;
 
 	private BufferedImage bufferedImage;
@@ -21,6 +21,19 @@ public class PanelVGA extends JComponent implements Sync {
 
 		bufferedImage = new BufferedImage(320, 240, BufferedImage.TYPE_INT_RGB);
 		videoMem = ((DataBufferInt) bufferedImage.getRaster().getDataBuffer()).getData();
+
+		new Thread(new Runnable() {
+			public void run() {
+				while (true) {
+					repaint();
+					try {
+						Thread.sleep(30);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+		}).start();
 	}
 
 	@Override
@@ -39,11 +52,5 @@ public class PanelVGA extends JComponent implements Sync {
 			videoMem[i] = (red << 16) | (green << 8) | (blue << 0);
 		}
 		g.drawImage(bufferedImage, 0, 0, getWidth(), getHeight(), null);
-	}
-
-	@Override
-	public void tick() {
-		// TODO: 60hz ?
-		repaint();
 	}
 }

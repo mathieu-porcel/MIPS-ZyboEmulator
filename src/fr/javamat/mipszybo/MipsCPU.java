@@ -1,5 +1,6 @@
 package fr.javamat.mipszybo;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 
 public class MipsCPU implements Sync {
@@ -26,6 +27,8 @@ public class MipsCPU implements Sync {
 
 	private Zybo zybo;
 
+	HashMap<states, Integer> test = new HashMap<states, Integer>();
+
 	/**
 	 * CPU MIPS
 	 */
@@ -48,16 +51,21 @@ public class MipsCPU implements Sync {
 	public void tick() {
 		MemoryRAM mem = zybo.getMem();
 
-		long IR = Integer.toUnsignedLong(reg.get("IR"));
-		long RS = (IR & 0x03E00000L) >> 21;
-		long RT = (IR & 0x001F0000L) >> 16;
-		long RD = (IR & 0x0000F800L) >> 11;
-		long SH = (IR & 0x000007C0L) >> 6;
+		if (mem.getData()[4100] != 0) {
+			System.out.println(mem.getData()[4100]);
+			mem.getData()[4100] = 0;
+		}
 
-		long imm16 = IR & 0x0000FFFFL;
-		long imm16ext = imm16 + ((IR & 0x00008000L) == 0 ? 0 : 0xFFFF0000L);
-		long imm16extUp = (imm16 << 2); // TODO: signe + ((IR & 0x00008000L) == 0 ? 0 : 0xFC000000L);
-		long imm26 = (IR & 0x03FFFFFFL) << 2;
+		int IR = reg.get("IR");
+		int RS = (IR & 0x03E00000) >>> 21;
+		int RT = (IR & 0x001F0000) >>> 16;
+		int RD = (IR & 0x0000F800) >>> 11;
+		int SH = (IR & 0x000007C0) >>> 6;
+
+		int imm16 = IR & 0x0000FFFF;
+		int imm16ext = imm16 | ((imm16 & 0x00008000) == 0 ? 0 : 0xFFFF0000);
+		int imm16extUp = (imm16 << 2) | ((imm16 & 0x00008000) == 0 ? 0 : 0xFFFC0000);
+		int imm26 = (IR & 0x03FFFFFF) << 2;
 
 		switch (state) {
 		case init:
@@ -77,11 +85,11 @@ public class MipsCPU implements Sync {
 
 		case decode:
 			reg.put("PC", (int) (Integer.toUnsignedLong(reg.get("PC")) + 4));
-			int opcode = (int) ((IR & 0xFC000000L) >> 26);
+			int opcode = (IR & 0xFC000000) >>> 26;
 			switch (opcode) {
 			case 0:
 				// Special
-				int func = (int) (IR & 0x000003FL);
+				int func = IR & 0x000003F;
 				switch (func) {
 				case 0:
 					state = states.sll;
@@ -144,7 +152,7 @@ public class MipsCPU implements Sync {
 				break;
 			case 1:
 				// Regimm
-				int regimm = (int) ((IR & 0x001F0000L) >> 16);
+				int regimm = (IR & 0x001F0000) >>> 16;
 				switch (regimm) {
 				case 0:
 					state = states.bltz;
@@ -185,7 +193,7 @@ public class MipsCPU implements Sync {
 				state = states.addi;
 				break;
 			case 9:
-				state = states.addi;
+				state = states.addi; // addiu
 				break;
 			case 10:
 				state = states.slti;
@@ -215,9 +223,15 @@ public class MipsCPU implements Sync {
 				state = states.init;
 				break;
 			}
-
-			System.out.println(state + " " + Integer.toHexString(reg.get("28")));
-
+			// System.out.println((reg.get("PC")-4)/4 + " " + state + " " + Integer.toBinaryString((int) IR) + " RS:" + reg.get(RS + "") + " RT:" +
+			// reg.get(RT+"") + " RD:" + reg.get(RD + "") + " SH:" + reg.get(SH + "") + " $0:" + reg.get("0") + " $1:" + reg.get("1") + " $2:" +
+			// reg.get("2") + " $3:" + reg.get("3") + " $28:" + reg.get("28") + " $29:" + reg.get("29") + " $30:" + reg.get("30") + " $31:" +
+			// reg.get("31"));
+		//	test.put(state, test.containsKey(state) ? test.get(state) + 1 : 0);
+			//if ((reg.get("PC") - 4) / 4 - 1003 == 0) {
+//				 System.out.println(test);
+//				 System.exit(0);
+			//}
 			break;
 
 		/*
@@ -231,7 +245,7 @@ public class MipsCPU implements Sync {
 			break;
 
 		case addi:
-			reg.put(RT + "", reg.get(RS + "") + ((int) imm16));
+			reg.put(RT + "", reg.get(RS + "") +  imm16ext);
 			mem.setAddr(reg.get("PC"));
 			state = states.fetch;
 			break;
@@ -249,13 +263,19 @@ public class MipsCPU implements Sync {
 			break;
 
 		case andi:
-			reg.put(RT + "", reg.get(RS + "") & ((int) imm16));
+			reg.put(RT + "", reg.get(RS + "") & imm16);
 			mem.setAddr(reg.get("PC"));
 			state = states.fetch;
 			break;
 
 		case or:
 			reg.put(RD + "", reg.get(RS + "") | reg.get(RT + ""));
+			mem.setAddr(reg.get("PC"));
+			state = states.fetch;
+			break;
+
+		case ori:
+			reg.put(RT + "", reg.get(RS + "") | imm16);
 			mem.setAddr(reg.get("PC"));
 			state = states.fetch;
 			break;
@@ -267,7 +287,7 @@ public class MipsCPU implements Sync {
 			break;
 
 		case xori:
-			reg.put(RT + "", reg.get(RS + "") ^ ((int) imm16));
+			reg.put(RT + "", reg.get(RS + "") ^ imm16);
 			mem.setAddr(reg.get("PC"));
 			state = states.fetch;
 			break;
@@ -323,7 +343,7 @@ public class MipsCPU implements Sync {
 			break;
 
 		case slti:
-			if (reg.get(RS + "") < ((int) imm16ext)) {
+			if (reg.get(RS + "") < imm16ext) {
 				state = states.true_to_rt;
 			} else {
 				state = states.false_to_rt;
@@ -339,7 +359,7 @@ public class MipsCPU implements Sync {
 			break;
 
 		case sltiu:
-			if (Integer.toUnsignedLong(reg.get(RS + "")) < imm16ext) {
+			if (Integer.toUnsignedLong(reg.get(RS + "")) < Integer.toUnsignedLong((int) imm16ext)) {
 				state = states.true_to_rt;
 			} else {
 				state = states.false_to_rt;
@@ -380,14 +400,8 @@ public class MipsCPU implements Sync {
 			state = states.fetch;
 			break;
 
-		case ori:
-			reg.put(RT + "", (int) (Integer.toUnsignedLong(reg.get(RS + "")) | imm16));
-			mem.setAddr(reg.get("PC"));
-			state = states.fetch;
-			break;
-
 		case lw:
-			reg.put("AD", (int) (Integer.toUnsignedLong(reg.get(RS + "")) + ((int) imm16ext)));
+			reg.put("AD", (int) (Integer.toUnsignedLong(reg.get(RS + "")) + imm16ext));
 			state = states.load;
 			break;
 
@@ -408,13 +422,16 @@ public class MipsCPU implements Sync {
 			break;
 
 		case sw:
-			reg.put("AD", (int) (Integer.toUnsignedLong(reg.get(RS + "")) + ((int) imm16ext)));
+			reg.put("AD", (int) (Integer.toUnsignedLong(reg.get(RS + "")) + imm16ext));
 			state = states.store;
 			break;
 
 		case store:
 			mem.setAddr(reg.get("AD"));
 			mem.write(reg.get(RT + ""));
+			// Timer
+			if (reg.get("AD") == 0x4010) {
+			}
 			state = states.fetch_wait;
 			break;
 
@@ -423,12 +440,12 @@ public class MipsCPU implements Sync {
 		 */
 
 		case j:
-			reg.put("PC", (int) ((reg.get("PC") & 0xF0000000L) | imm26));
+			reg.put("PC", (reg.get("PC") & 0xF0000000) | imm26);
 			state = states.fetch_wait;
 			break;
 
 		case bj:
-			reg.put("PC", (int) (Integer.toUnsignedLong(reg.get("PC")) + ((int) imm16extUp)));
+			reg.put("PC", (int) (Integer.toUnsignedLong(reg.get("PC")) + imm16extUp));
 			state = states.fetch_wait;
 			break;
 
@@ -443,7 +460,7 @@ public class MipsCPU implements Sync {
 			break;
 
 		case beq:
-			if ((reg.get(RT + "") - reg.get(RS + "")) == 0) {
+			if (reg.get(RT + "") - reg.get(RS + "") == 0) {
 				state = states.bj;
 			} else {
 				mem.setAddr(reg.get("PC"));

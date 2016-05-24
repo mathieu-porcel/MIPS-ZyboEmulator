@@ -23,11 +23,23 @@ public class MemoryRAM {
 	}
 
 	public void write(int data) {
-		ram[addr / 4] = data;
-		// ram[addr + 0] = ((dataOut & 0x000000FF) >> 0);
-		// ram[addr + 1] = ((dataOut & 0x0000FF00) >> 8);
-		// ram[addr + 2] = ((dataOut & 0x00FF0000) >> 16);
-		// ram[addr + 3] = ((dataOut & 0xFF000000) >> 24);
+		switch (addr % 4) {
+		case 0:
+			ram[addr / 4] = data;
+			break;
+		case 1:
+			ram[addr / 4] = (ram[addr / 4] & 0xFF000000) | (data >>> 8);
+			ram[addr / 4 + 1] = (ram[addr / 4 + 1] & 0x00FFFFFF) | ((data & 0x000000FF) << 24);
+			break;
+		case 2:
+			ram[addr / 4] = (ram[addr / 4] & 0xFFFF0000) | (data >>> 16);
+			ram[addr / 4 + 1] = (ram[addr / 4 + 1] & 0x0000FFFF) | ((data & 0x0000FFFF) << 16);
+			break;
+		case 3:
+			ram[addr / 4] = (ram[addr / 4] & 0xFFFFFF00) | (data >>> 24);
+			ram[addr / 4 + 1] = (ram[addr / 4 + 1] & 0x000000FF) | ((data & 0x00FFFFFF) << 8);
+			break;
+		}
 	}
 
 	public void setAddr(int addr) {
@@ -40,11 +52,20 @@ public class MemoryRAM {
 
 	public int getDataAt(int addr) {
 		int d = 0;
-		// d += (ram[addr + 0] << 0);
-		// d += (ram[addr + 1] << 8);
-		// d += (ram[addr + 2] << 16);
-		// d += (ram[addr + 3] << 24);
-		d = ram[addr / 4];
+		switch (addr % 4) {
+		case 0:
+			d = ram[addr / 4];
+			break;
+		case 1:
+			d = (ram[addr / 4] << 8) + (ram[addr / 4 + 1] >>> 24);
+			break;
+		case 2:
+			d = (ram[addr / 4] << 16) + (ram[addr / 4 + 1] >>> 16);
+			break;
+		case 3:
+			d = (ram[addr / 4] << 24) + (ram[addr / 4 + 1] >>> 8);
+			break;
+		}
 		return d;
 	}
 }

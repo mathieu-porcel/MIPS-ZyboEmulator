@@ -16,7 +16,6 @@ public class MainGUI {
 		Zybo zybo = new Zybo();
 		PanelVGA panelVGA = new PanelVGA(zybo);
 		PanelInOut panelInOut = new PanelInOut(zybo);
-		zybo.getClock().addSyncListener(panelVGA);
 
 		JFrame f = new JFrame("MIPS");
 		f.setLayout(new BorderLayout());
@@ -30,7 +29,7 @@ public class MainGUI {
 		f.setVisible(true);
 
 		// Lecture programme
-		String file = "program/droite.mem";
+		String file = "C:/Users/Javamat/Desktop/cep_abbeyd_porcelma/mem/mips_invader_zybo.mem";
 		try {
 			InputStream ips = new FileInputStream(file);
 			InputStreamReader ipsr = new InputStreamReader(ips);
@@ -46,6 +45,7 @@ public class MainGUI {
 					addr += 1;
 				}
 			}
+			br.close();
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
