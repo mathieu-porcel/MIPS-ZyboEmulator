@@ -4,6 +4,14 @@ import java.util.HashMap;
 
 public class MipsCPU extends Thread {
 
+	/**
+	 * Timer
+	 */
+
+	public static final int ADDR_TIMER_VALUE = 0x4010;
+	public static final int ADDR_TIMER_PERIOD = 0x4010;
+	public static final int ADDR_TIMER_SEUIL = 0x4014;
+
 	private int timer;
 
 	/**
@@ -53,6 +61,17 @@ public class MipsCPU extends Thread {
 		for (int i = 0; i < 32; i++) {
 			reg[i] = 0;
 		}
+	}
+
+	public void reset() {
+		IR = 0;
+		PC = 0;
+		AD = 0;
+		DT = 0;
+		for (int i = 0; i < 32; i++) {
+			reg[i] = 0;
+		}
+		state = states.init;
 	}
 
 	@Override
@@ -225,22 +244,23 @@ public class MipsCPU extends Thread {
 					state = states.init;
 					break;
 				}
-				
-//				if(state == states.jal){
-//					test2++;
-//				}
-//				
-//				if(test2 > 3){
-//				test.put(state, test.containsKey(state) ? test.get(state) + 1 : 0);
-//				System.out.println((PC - 4) / 4 + " " + state + " " + Integer.toBinaryString((int) IR) + " RS:" + reg[RS] + " RT:" + reg[RT] + " RD:"
-//				+ reg[RD] + " SH:" + reg[SH] + " $0:" + reg[0] + " $1:" + reg[1] + " $2:" + reg[2] + " $3:" + reg[3] + " $28:" + reg[28]
-//				+ " $29:" + reg[29] + " $30:" + reg[30] + " $31:" + reg[31]);
-//				}
-//				
-//				if ((PC - 4) / 4 - 1003 == 0) {
-//					System.out.println(test);
-//					System.exit(0);
-//				}
+
+				// if(state == states.jal){
+				// test2++;
+				// }
+				//
+				// if(test2 > 3){
+				// test.put(state, test.containsKey(state) ? test.get(state) + 1 : 0);
+				// System.out.println((PC - 4) / 4 + " " + state + " " + Integer.toBinaryString((int) IR) + " RS:" + reg[RS] + " RT:" + reg[RT] + "
+				// RD:"
+				// + reg[RD] + " SH:" + reg[SH] + " $0:" + reg[0] + " $1:" + reg[1] + " $2:" + reg[2] + " $3:" + reg[3] + " $28:" + reg[28]
+				// + " $29:" + reg[29] + " $30:" + reg[30] + " $31:" + reg[31]);
+				// }
+				//
+				// if ((PC - 4) / 4 - 1003 == 0) {
+				// System.out.println(test);
+				// System.exit(0);
+				// }
 				break;
 
 			/*
@@ -398,7 +418,7 @@ public class MipsCPU extends Thread {
 				break;
 
 			case mem_to_dt:
-				if (AD == 0x4010) {
+				if (AD == ADDR_TIMER_VALUE) {
 					// Timer
 					DT = timer > mem.read(0x4014) ? 1 : 0;
 				} else {
@@ -515,7 +535,7 @@ public class MipsCPU extends Thread {
 			}
 
 			// Timer
-			if (timer >= mem.read(0x4010)) {
+			if (timer >= mem.read(ADDR_TIMER_PERIOD)) {
 				timer = 0;
 			} else {
 				timer++;

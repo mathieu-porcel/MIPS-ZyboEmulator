@@ -29,7 +29,7 @@ public class MainGUI {
 		f.setVisible(true);
 
 		// Lecture programme
-		String file = "program/droite.mem";
+		String file = "C:/Users/Javamat/Desktop/cep_abbeyd_porcelma/mem/mips_invader_zybo.mem";
 		try {
 			InputStream ips = new FileInputStream(file);
 			InputStreamReader ipsr = new InputStreamReader(ips);
