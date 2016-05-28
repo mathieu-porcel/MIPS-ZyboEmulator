@@ -5,22 +5,18 @@ public class Zybo {
 	public static final int VGA_HEIGHT = 240;
 
 	private MipsCPU cpu;
-	private MemoryRAM memory;
-	private Clock clock;
+	private MemoryRAM ram;
 
 	public Zybo() {
 		cpu = new MipsCPU(this);
-		memory = new MemoryRAM();
-
-		clock = new Clock();
-		clock.addSyncListener(cpu);
+		ram = new MemoryRAM();
 	}
 
-	public MemoryRAM getMem() {
-		return memory;
+	public MemoryRAM getRAM() {
+		return ram;
 	}
 
-	public Clock getClock() {
-		return clock;
+	public MipsCPU getCPU() {
+		return cpu;
 	}
 }

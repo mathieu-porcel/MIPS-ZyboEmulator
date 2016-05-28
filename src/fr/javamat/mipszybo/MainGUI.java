@@ -29,19 +29,18 @@ public class MainGUI {
 		f.setVisible(true);
 
 		// Lecture programme
-		String file = "C:/Users/Javamat/Desktop/cep_abbeyd_porcelma/mem/mips_invader_zybo.mem";
+		String file = "program/droite.mem";
 		try {
 			InputStream ips = new FileInputStream(file);
 			InputStreamReader ipsr = new InputStreamReader(ips);
 			BufferedReader br = new BufferedReader(ipsr);
 			String l;
 			int addr = 0;
-			int[] ram = zybo.getMem().getData();
 			while ((l = br.readLine()) != null) {
 				if (l.startsWith("@")) {
 					addr = (int) (Long.decode("0x" + l.subSequence(1, 9)) / 4);
 				} else {
-					ram[addr] = (int) (Long.decode("0x" + l) * 1);
+					zybo.getRAM().ram[addr] = (int) (Long.decode("0x" + l) * 1);
 					addr += 1;
 				}
 			}
@@ -52,6 +51,6 @@ public class MainGUI {
 			e.printStackTrace();
 		}
 
-		zybo.getClock().start();
+		zybo.getCPU().start();
 	}
 }

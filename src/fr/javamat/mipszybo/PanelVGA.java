@@ -39,7 +39,7 @@ public class PanelVGA extends JComponent {
 	@Override
 	public void paint(Graphics g) {
 		for (int i = 0; i < 320 * 240; i++) {
-			int color = zybo.getMem().getDataAt(0x80000 + i * 4);
+			int color = zybo.getRAM().read(0x80000 + i * 4);
 
 			// Conversion couleur réel
 			int red = (color & 0x0000F800) >> 11;

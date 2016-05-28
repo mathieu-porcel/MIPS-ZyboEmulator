@@ -7,9 +7,7 @@ public class MemoryRAM {
 	 */
 	public static final int MEMORY_SIZE = 1000000;
 
-	private int[] ram;
-
-	private int addr;
+	public int[] ram;
 
 	/**
 	 * Mémoire RAM pour les programmes et données
@@ -18,11 +16,7 @@ public class MemoryRAM {
 		ram = new int[MEMORY_SIZE];
 	}
 
-	public int getDataIn() {
-		return getDataAt(addr);
-	}
-
-	public void write(int data) {
+	public void write(int addr, int data) {
 		switch (addr % 4) {
 		case 0:
 			ram[addr / 4] = data;
@@ -42,15 +36,7 @@ public class MemoryRAM {
 		}
 	}
 
-	public void setAddr(int addr) {
-		this.addr = addr;
-	}
-
-	public int[] getData() {
-		return ram;
-	}
-
-	public int getDataAt(int addr) {
+	public int read(int addr) {
 		int d = 0;
 		switch (addr % 4) {
 		case 0:
