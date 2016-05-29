@@ -20,18 +20,18 @@ public class PanelInOut extends JPanel implements ActionListener, MouseListener 
 	public static final int ADDR_LED = 0x4000;
 	public static final int ADDR_BUTTON = 0x4004;
 
-	JToggleButton switch1;
-	JToggleButton switch2;
-	JToggleButton switch3;
-	JToggleButton switch4;
+	private JToggleButton switch1;
+	private JToggleButton switch2;
+	private JToggleButton switch3;
+	private JToggleButton switch4;
 
-	JButton reset;
-	JButton push1;
-	JButton push2;
-	JButton push3;
+	private JButton reset;
+	private JButton push1;
+	private JButton push2;
+	private JButton push3;
 
-	JComponent led28;
-	JComponent led4000;
+	private JComponent led28;
+	private JComponent led4000;
 
 	public PanelInOut(Zybo zybo) {
 		this.zybo = zybo;
@@ -73,18 +73,18 @@ public class PanelInOut extends JPanel implements ActionListener, MouseListener 
 		add(led4000);
 
 		JPanel panelSwitch = new JPanel();
-		switch1 = new JToggleButton("Sw1");
-		switch1.addActionListener(this);
-		panelSwitch.add(switch1);
-		switch2 = new JToggleButton("Sw2");
-		switch2.addActionListener(this);
-		panelSwitch.add(switch2);
-		switch3 = new JToggleButton("Sw3");
-		switch3.addActionListener(this);
-		panelSwitch.add(switch3);
 		switch4 = new JToggleButton("Sw4");
 		switch4.addActionListener(this);
 		panelSwitch.add(switch4);
+		switch3 = new JToggleButton("Sw3");
+		switch3.addActionListener(this);
+		panelSwitch.add(switch3);
+		switch2 = new JToggleButton("Sw2");
+		switch2.addActionListener(this);
+		panelSwitch.add(switch2);
+		switch1 = new JToggleButton("Sw1");
+		switch1.addActionListener(this);
+		panelSwitch.add(switch1);
 		add(panelSwitch);
 
 		JPanel panelPush = new JPanel();
@@ -107,7 +107,7 @@ public class PanelInOut extends JPanel implements ActionListener, MouseListener 
 				while (true) {
 					repaint();
 					try {
-						Thread.sleep(100);
+						Thread.sleep(10);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}

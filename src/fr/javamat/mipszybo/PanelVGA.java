@@ -27,7 +27,7 @@ public class PanelVGA extends JComponent {
 				while (true) {
 					repaint();
 					try {
-						Thread.sleep(30);
+						Thread.sleep(10);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
@@ -39,7 +39,7 @@ public class PanelVGA extends JComponent {
 	@Override
 	public void paint(Graphics g) {
 		for (int i = 0; i < 320 * 240; i++) {
-			int color = zybo.getRAM().read(0x80000 + i * 4);
+			int color = zybo.getRAM().read(0x80000*0 + i * 4);
 
 			// Conversion couleur réel
 			int red = (color & 0x0000F800) >> 11;

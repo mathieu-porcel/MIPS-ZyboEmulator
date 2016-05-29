@@ -16,12 +16,14 @@ public class MainGUI {
 		Zybo zybo = new Zybo();
 		PanelVGA panelVGA = new PanelVGA(zybo);
 		PanelInOut panelInOut = new PanelInOut(zybo);
+		PanelDebug panelDebug = new PanelDebug(zybo);
 
 		JFrame f = new JFrame("MIPS");
 		f.setLayout(new BorderLayout());
 
 		f.add(panelVGA, BorderLayout.CENTER);
 		f.add(panelInOut, BorderLayout.SOUTH);
+		f.add(panelDebug, BorderLayout.EAST);
 
 		f.pack();
 		f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

@@ -5,7 +5,7 @@ public class MemoryRAM {
 	/**
 	 * Taille de la mémoire en octets
 	 */
-	public static final int MEMORY_SIZE = 1000000;
+	public static final int MEMORY_SIZE = 0x000FFFFF;
 
 	public int[] ram;
 
@@ -17,6 +17,7 @@ public class MemoryRAM {
 	}
 
 	public void write(int addr, int data) {
+		addr = (0x7FFFFFFF & addr) % MEMORY_SIZE;
 		switch (addr % 4) {
 		case 0:
 			ram[addr / 4] = data;
@@ -37,21 +38,17 @@ public class MemoryRAM {
 	}
 
 	public int read(int addr) {
-		int d = 0;
+		addr = (0x7FFFFFFF & addr) % MEMORY_SIZE;
 		switch (addr % 4) {
 		case 0:
-			d = ram[addr / 4];
-			break;
+			return ram[addr / 4];
 		case 1:
-			d = (ram[addr / 4] << 8) + (ram[addr / 4 + 1] >>> 24);
-			break;
+			return (ram[addr / 4] << 8) + (ram[addr / 4 + 1] >>> 24);
 		case 2:
-			d = (ram[addr / 4] << 16) + (ram[addr / 4 + 1] >>> 16);
-			break;
+			return (ram[addr / 4] << 16) + (ram[addr / 4 + 1] >>> 16);
 		case 3:
-			d = (ram[addr / 4] << 24) + (ram[addr / 4 + 1] >>> 8);
-			break;
+			return (ram[addr / 4] << 24) + (ram[addr / 4 + 1] >>> 8);
 		}
-		return d;
+		return 0;
 	}
 }

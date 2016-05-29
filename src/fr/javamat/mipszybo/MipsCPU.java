@@ -1,8 +1,7 @@
 package fr.javamat.mipszybo;
 
-import java.util.HashMap;
-
 public class MipsCPU extends Thread {
+	private Zybo zybo;
 
 	/**
 	 * Timer
@@ -24,9 +23,9 @@ public class MipsCPU extends Thread {
 	public int[] reg;
 
 	/**
-	 * Etats de la partie contrôle
+	 * Etats PO
 	 */
-	private enum states {
+	public static enum states {
 		init, fetch_wait, fetch, decode,
 
 		lui, ori, add, addi, and, andi, nor, or, xor, xori, sub, sll, sllv, srl, sra, srav, srlv,
@@ -37,11 +36,7 @@ public class MipsCPU extends Thread {
 	};
 
 	private states state;
-
-	private Zybo zybo;
-
-	HashMap<states, Integer> test = new HashMap<states, Integer>();
-	int test2 = 0;
+	public states instruction;
 
 	/**
 	 * CPU MIPS
@@ -51,8 +46,6 @@ public class MipsCPU extends Thread {
 		reg = new int[32];
 		state = states.init;
 
-		timer = 0;
-
 		// Créations des registres
 		IR = 0;
 		PC = 0;
@@ -61,22 +54,67 @@ public class MipsCPU extends Thread {
 		for (int i = 0; i < 32; i++) {
 			reg[i] = 0;
 		}
+
+		timer = 0;
+		reset = false;
+		freq = 1;
+
+		wait = true;
+		debug = true;
+		instruction = states.init;
 	}
 
+	/**
+	 * Reset
+	 */
+
+	private boolean reset;
+
 	public void reset() {
-		IR = 0;
-		PC = 0;
-		AD = 0;
-		DT = 0;
-		for (int i = 0; i < 32; i++) {
-			reg[i] = 0;
-		}
-		state = states.init;
+		reset = true;
 	}
+
+	/**
+	 * Debug
+	 */
+
+	private boolean debug;
+	private boolean wait;
+
+	public void setDebug(boolean debug) {
+		wait = debug;
+		this.debug = debug;
+	}
+
+	public void step() {
+		wait = false;
+	}
+
+	/**
+	 * PC / PO
+	 */
+
+	public double freq;
+	public double realFreq;
 
 	@Override
 	public void run() {
+		double t = System.nanoTime();
+		double freq = this.freq;
+		int nb = 0;
 		while (true) {
+			if (reset) {
+				IR = 0;
+				PC = 0;
+				AD = 0;
+				DT = 0;
+				for (int i = 0; i < 32; i++) {
+					reg[i] = 0;
+				}
+				state = states.fetch_wait;
+				reset = false;
+			}
+
 			MemoryRAM mem = zybo.getRAM();
 
 			int RS = (IR & 0x03E00000) >>> 21;
@@ -86,8 +124,6 @@ public class MipsCPU extends Thread {
 
 			int imm16 = IR & 0x0000FFFF;
 			int imm16ext = imm16 | ((imm16 & 0x00008000) == 0 ? 0 : 0xFFFF0000);
-			int imm16extUp = (imm16 << 2) | ((imm16 & 0x00008000) == 0 ? 0 : 0xFFFC0000);
-			int imm26 = (IR & 0x03FFFFFF) << 2;
 
 			switch (state) {
 			case init:
@@ -102,6 +138,7 @@ public class MipsCPU extends Thread {
 			case fetch:
 				IR = mem.read(PC);
 				state = states.decode;
+
 				break;
 
 			case decode:
@@ -245,22 +282,24 @@ public class MipsCPU extends Thread {
 					break;
 				}
 
-				// if(state == states.jal){
-				// test2++;
-				// }
-				//
-				// if(test2 > 3){
-				// test.put(state, test.containsKey(state) ? test.get(state) + 1 : 0);
+				// Debug
+				instruction = state;
+				if (debug) {
+					realFreq = 0;
+					while (wait) {
+						try {
+							Thread.sleep(100);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+					}
+					wait = true;
+					freq = this.freq;
+					nb = 0;
+				}
 				// System.out.println((PC - 4) / 4 + " " + state + " " + Integer.toBinaryString((int) IR) + " RS:" + reg[RS] + " RT:" + reg[RT] + "
-				// RD:"
-				// + reg[RD] + " SH:" + reg[SH] + " $0:" + reg[0] + " $1:" + reg[1] + " $2:" + reg[2] + " $3:" + reg[3] + " $28:" + reg[28]
-				// + " $29:" + reg[29] + " $30:" + reg[30] + " $31:" + reg[31]);
-				// }
-				//
-				// if ((PC - 4) / 4 - 1003 == 0) {
-				// System.out.println(test);
-				// System.exit(0);
-				// }
+				// RD:" + reg[RD] + " SH:" + reg[SH] + " $0:" + reg[0] + " $1:" + reg[1] + " $2:" + reg[2] + " $3:" + reg[3] + " $28:" + reg[28] + "
+				// $29:" + reg[29] + " $30:" + reg[30] + " $31:" + reg[31]);
 				break;
 
 			/*
@@ -447,11 +486,13 @@ public class MipsCPU extends Thread {
 			 */
 
 			case j:
+				int imm26 = (IR & 0x03FFFFFF) << 2;
 				PC = (PC & 0xF0000000) | imm26;
 				state = states.fetch_wait;
 				break;
 
 			case bj:
+				int imm16extUp = (imm16 << 2) | ((imm16 & 0x00008000) == 0 ? 0 : 0xFFFC0000);
 				PC = (int) (Integer.toUnsignedLong(PC) + imm16extUp);
 				state = states.fetch_wait;
 				break;
@@ -539,6 +580,25 @@ public class MipsCPU extends Thread {
 				timer = 0;
 			} else {
 				timer++;
+			}
+
+			// Clock
+			nb++;
+			if ((nb > freq / 10) && !debug) {
+				double tmpFreq = 0;
+				while ((tmpFreq = (1e9 / (System.nanoTime() - t)) * nb) > freq) {
+					if (freq < 100) {
+						try {
+							Thread.sleep(1);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+					}
+				}
+				realFreq = tmpFreq;
+				freq = this.freq;
+				t = System.nanoTime();
+				nb = 0;
 			}
 		}
 	}
